@@ -1,0 +1,193 @@
+<html>
+    <head>
+        <title>
+            Today...
+        </title>
+        <style>
+            * {
+                font-family:'IBM Plex Mono';
+            }
+
+            #title {
+                font-size:36px;
+            }
+            #input {
+                font-size:24px;
+                width:100%;
+            }
+            p {
+                font-size:24px;
+
+                margin:0px 0px 0px 0px;
+                padding: 8px 0px 8px 0px;
+            }
+
+            .entry:hover {
+                background-color:lightgray;
+            }
+        </style>
+    </head>
+    <body onunload="saveHistory()">
+        <div style="margin:64px 64px 64px 64px;">
+
+            <div>
+                <h1 id="title">Today...</h1>
+
+                <div class="desc">
+
+                    <span style="font-size: 24px;">- </span>
+                    <div style="display:inline-block; width:960px;">
+                        <input id="input" placeholder="a lot of great things happened!" />
+                    </div>
+                </div>
+                
+                <div class="desc" id="descToday">
+                </div>
+                <div class="desc" id="descPast">
+
+                </div>
+            </div>
+            <script type="text/javascript">
+                var localStorage = window.localStorage;
+                var KEY = 'INeedAUniqueUsername/today/history';
+
+                function wipe() {
+                    localStorage.setItem(KEY, {});
+                }
+
+                var today = new Date();
+                let history = {};
+
+                var date = new Date();
+
+                console.log('date: ' + getStr(date));
+
+                let input = document.getElementById('input');
+                input.onkeypress = record;
+
+                if (typeof (Storage) !== undefined) {
+                    let h = localStorage.getItem(KEY);
+                    history = JSON.parse(h);
+
+                    //console.log('local storage available');
+                    //console.log('key: ' + KEY);
+                    //console.log('history loaded: ' + h);
+                    //console.log('history loaded: ' + JSON.stringify(history));
+
+                    updateDescToday();
+                    updateDescPast();
+                    saveHistory();
+                } else {
+                    //console.log('local storage unavailable');
+                }
+                function setDate(d) {
+                    date = d;
+                    dateStr = getStr(d);
+                }
+                function getStr(date) {
+                    return `${date.getMonth()}/${date.getUTCDay()}/${date.getUTCFullYear()}`;
+                }
+
+                function record(e) {
+                    if (e.keyCode == 13) {
+                        let val = input.value;
+                        let text = val;
+
+                        input.value = '';
+
+                        //console.log('history: ' + history);
+                        //console.log('text: ' + text);
+                        
+                        add(date, text);
+                        let d = new Date(date.getFullYear() - 1, date.getMonth(), date.getDay());
+                        add(d, text);
+
+                        saveHistory();
+                        updateDescToday();
+                    }
+                }
+                function add(d, event) {
+                    let dateStr = getStr(d);
+
+                    console.log('add event: ' + dateStr);
+
+                    if (!history[dateStr]) {
+                        history[dateStr] = [];
+                    }
+                    history[dateStr].push(event);
+                }
+
+                function deleteAt(index) {
+
+                    let dateStr = getStr(date);
+                    history[dateStr].splice(index, 1);
+                    updateDescToday();
+                }
+                function updateDescToday() {
+                    let descToday = document.getElementById('descToday');
+
+                    let str = '';
+                    let dateStr = getStr(date);
+                    if (history[dateStr]) {
+                        str += history[dateStr]
+                            .map((line, index) => `
+
+<p class="entry">
+    - ${line}
+
+<b onclick="deleteAt(${index})" style="float:right; margin-right:16px;">[X]</b>
+</p>`)
+                            .join('');
+                    }
+                    descToday.innerHTML = `${str}`;
+                    //desc.innerHTML = `${str}`;
+                }
+                function updateDescPast() {
+                    let descPast = document.getElementById('descPast');
+                    let str = '';
+                    let keys = Object.keys(history);
+                    for (let i in keys) {
+                        let past = keys[i];
+
+                        console.log('past: ' + past);
+                        let pastDate = new Date(Date.parse(past));
+                        console.log('pastd: ' + pastDate);
+                        //Same day
+                        if (pastDate.getUTCDay() != date.getUTCDay()) {
+                            continue;
+                        }
+                        //Same month
+                        if (pastDate.getUTCMonth() != date.getUTCMonth()) {
+                            continue;
+                        }
+                        //Different year
+                        if (pastDate.getUTCFullYear() == date.getUTCFullYear()) {
+                            continue;
+                        }
+
+                        let deltaYear = (date.getUTCFullYear() - pastDate.getUTCFullYear());
+                        str += `<h1>${deltaYear} ${deltaYear == 1 ? 'years' : 'year'} ago...</h1>`;
+                        let s = history[past]
+                            .map((line, index) => `<b onclick="history[${past}].splice(${index}); updateDescPast();">X</b><li>- ${line}</li>`)
+                            .join('');
+                        str += `<ul>${s}</ul>`;
+                    }
+                    descPast.innerHTML = str;
+                }
+                
+
+                function saveHistory() {
+                    if (typeof (Storage) !== undefined) {
+                        //console.log('local storage available');
+                        //console.log('key: ' + KEY);
+                        //console.log('history: ' + JSON.stringify(history));
+                        localStorage.setItem(KEY, JSON.stringify(history));
+                    } else {
+                        //console.log('local storage unavailable');
+                    }
+                }
+
+            </script>
+        </div>
+    </body>
+</html>
