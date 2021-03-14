@@ -10,9 +10,25 @@
                 font-family:'IBM Plex Mono';
             }
 
-            #title {
-                font-size:36px;
+            #title, #dateInput {
+                margin-top: 8px;
+                font-size: 36px;
+                padding: 0px 0px 0px 0px;
+                width: 256px;
             }
+            #title {
+                margin-bottom: 20px;
+            }
+                #title:hover {
+                    background-color: lightgray;
+                }
+
+            #dateInput {
+                margin-bottom: 16px;
+            }
+            #dateInput {
+            }
+
             #input {
                 font-size:24px;
                 width:100%;
@@ -29,16 +45,30 @@
               visibility:hidden;
             }
 
-            .entry:hover {
-                clear:both;
-                background-color:lightgray;
-            }
+                .entry:hover, .entryTitle:hover {
+                    clear: both;
+                    background-color: lightgray;
+                }
+
+
             .entry:hover .entryButton {
                 visibility: visible;
             }
             .entryButton {
                 float:right;
             }
+            .colorbar {
+                margin: 0px 0px 0px 0px;
+                padding: 0px 0px 0px 0px;
+            }
+                .colorbar div {
+                    width: 48px;
+                    height: 48px;
+                    clear: both;
+                    display: inline-block;
+                    margin: 0px 0px 0px 0px;
+                    padding: 0px 0px 0px 0px;
+                }
 
             .desc {
             }
@@ -47,28 +77,100 @@
     <body onunload="saveHistory()" style="margin: 64px 64px 64px 64px;">
         <div>
 
-            <h1 id="title" style="margin-left:0px;">Today...</h1>
 
-            <div class="desc">
 
-                <span style="font-size: 24px; margin-left:32px;">- </span>
-                <div style="display:inline-block; width:960px;">
-                    <input id="input" placeholder="a lot of great things happened!" />
-                </div>
+            <div class="colorbar">
+                <div onclick="setColor(this)" style="background-color:palegoldenrod;"></div>
+                <div onclick="setColor(this)" style="background-color:lightpink;"></div>
+                <div onclick="setColor(this)" style="background-color:paleturquoise;"></div>
+                <div onclick="setColor(this)" style="background-color:plum;"></div>
             </div>
+            <div id="sectionToday">
+                <h1 id="title" onclick="enterDate()">Today...</h1>
 
-            <div class="desc" id="descToday">
+
+
+                <input id="dateInput" hidden="hidden" />
+
+                <div class="desc">
+
+                    <span style="font-size: 24px; margin-left:32px;">- </span>
+                    <div style="display:inline-block; width:960px;">
+                        <input id="input" placeholder="a lot of great things happened!" />
+                    </div>
+                </div>
+
+                <div class="desc" id="descToday">
+                </div>
             </div>
             <div class="desc" id="descPast">
 
             </div>
             <script type="text/javascript">
                 let localStorage = window.localStorage;
-                let KEY = 'INeedAUniqueUsername/today/history';
+                let KEY_HISTORY = 'INeedAUniqueUsername/today/history';
+                let KEY_COLOR = 'INeedAUniqueUsername/today/color';
 
-                function wipe() {
-                    localStorage.setItem(KEY, {});
+                let dateColor = {};
+
+                function setColor(e) {
+                    dateColor[getStr(currentDate)] = e.style['background-color'];
+                    saveData();
+                    updateDescToday();
                 }
+                function wipe() {
+                    localStorage.setItem(KEY_COLOR, {});
+                    localStorage.setItem(KEY_HISTORY, {});
+                }
+                let title = document.getElementById('title');
+                let dateInput = document.getElementById('dateInput');
+                function enterDate() {
+
+                    title.hidden = 'hidden';
+                    dateInput.hidden = '';
+                    dateInput.value = getStr(currentDate);
+                }
+
+                dateInput.onkeypress = checkDateInput;
+                dateInput.oninput = () => {
+                    trySetDate();
+                    updateDescPast();
+                    updateDescToday();
+                }
+                //dateInput.onmouse = trySetDate;
+                function checkDateInput(e) {
+
+
+                    if (e.keyCode == 13) {
+                        showTitle();
+                        trySetDate();
+                    }
+                }
+                function trySetDate() {
+                    try {
+                        if (dateInput.value.length > 0) {
+                            currentDate = new Date(dateInput.value);
+                        } else {
+                            currentDate = new Date();
+                        }
+                    } catch (e) {
+
+                    }
+                }
+                function showTitle() {
+                    title.hidden = '';
+                    if (getStr(currentDate) === getStr(new Date())) {
+                        title.innerText = "Today..."
+                    } else {
+                        title.innerText = `${getStr(currentDate)}...`
+                    }
+                    dateInput.hidden = 'hidden';
+
+
+                    updateDescPast();
+                    updateDescToday();
+                }
+
 
                 let history = {};
 
@@ -78,10 +180,13 @@
 
                 let input = document.getElementById('input');
                 input.onkeypress = record;
+                let descPast = document.getElementById('descPast');
 
                 if (typeof (Storage) !== undefined) {
-                    let h = localStorage.getItem(KEY);
-                    history = JSON.parse(h) || {};
+                    history = JSON.parse(localStorage.getItem(KEY_HISTORY))
+                        || {};
+                    dateColor = JSON.parse(localStorage.getItem(KEY_COLOR))
+                        || {};
 
                     //console.log('local storage available');
                     //console.log('key: ' + KEY);
@@ -90,7 +195,7 @@
 
                     updateDescToday();
                     updateDescPast();
-                    saveHistory();
+                    saveData();
                 } else {
                     //console.log('local storage unavailable');
                 }
@@ -101,6 +206,9 @@
                 function record(e) {
                     if (e.keyCode == 13) {
                         let val = input.value;
+                        if (val == '') {
+                            return;
+                        }
                         let text = val;
 
                         input.value = '';
@@ -109,11 +217,14 @@
                         //console.log('text: ' + text);
 
                         add(currentDate, text);
+                        /*
                         let d = new Date(currentDate.getUTCFullYear() - 1, currentDate.getUTCMonth(), currentDate.getUTCDate());
                         add(d, text);
+                        */
 
-                        saveHistory();
+                        saveData();
                         updateDescToday();
+                        updateDescPast();
                     }
                 }
                 function add(d, event) {
@@ -131,29 +242,41 @@
 
                     let dateStr = getStr(currentDate);
                     history[dateStr].splice(index, 1);
+                    if (history[dateStr].length == 0) {
+                        delete history[dateStr];
+                    }
                     updateDescToday();
                 }
                 function updateDescToday() {
                     let descToday = document.getElementById('descToday');
 
-                    let str = '';
                     let dateStr = getStr(currentDate);
+                    sectionToday.style['background-color'] = dateColor[dateStr] || 'white';
+
+                    let str = '';
                     if (history[dateStr]) {
                         str += history[dateStr]
                             .map((line, index) => `
-                                <p class="entry">
-                                <b class="entryButton" onclick="deleteToday(${index})">[X]</b>
-                                    - ${line}
-                                </p>`)
+                                                        <p class="entry">
+                                                        <b class="entryButton" onclick="deleteToday(${index})">[X]</b>
+                                                            - ${line}
+                                                        </p>`)
                             .join('');
                     }
                     descToday.innerHTML = `${str}`;
                     //desc.innerHTML = `${str}`;
                 }
+
+                function setDate(dateStr) {
+                    console.log(dateStr);
+                    currentDate = new Date(dateStr);
+                    showTitle();
+                }
+
                 function updateDescPast() {
-                    let descPast = document.getElementById('descPast');
                     let str = '';
                     let keys = Object.keys(history);
+                    keys.sort().reverse();
                     for (let i in keys) {
                         let past = keys[i];
                         let pastDate = new Date(past);
@@ -167,38 +290,56 @@
                             && pastDate.getUTCFullYear() !== currentDate.getUTCFullYear()) {
 
                             let deltaYear = (currentDate.getUTCFullYear() - pastDate.getUTCFullYear());
-                            str += `<h1>${deltaYear} ${deltaYear === 1 ? 'years' : 'year'} ago...</h1>`;
-                            console.log(history[past]);
-                            let s = history[past]
+
+
+                            let pastStr = getStr(pastDate);
+
+                            let s = '';
+                            if (deltaYear > 0) {
+
+                                //remember to surround the input with quotes
+                                s = `<h1 class="entryTitle" onclick="setDate('${pastStr}')">${pastStr} (${deltaYear} ${deltaYear === 1 ? 'year' : 'years'} ago)...</h1>`;
+                            } else {
+                                deltaYear = -deltaYear;
+                                s = `<h1 class="entryTitle" onclick="setDate('${pastStr}')"> ${pastStr} (${deltaYear} ${deltaYear === 1 ? 'year' : 'years'} later)...</h1>`;
+                            }
+                            console.log('pastSTR: ' + pastStr);
+                            s += history[past]
                                 .map((line, index) => `
-                                    <p class="entry">
-                                    <b class="entryButton" onclick="deletePast(${past}, ${index})">X</b>
-                                    - ${line}</p>`)
+                                                            <p class="entry">
+                                                            <b class="entryButton" onclick="deletePast('${pastStr}', ${index})">[X]</b>
+                                                            - ${line}</p>`)
                                 .join('');
-                            str += s;
+
+                            str += `<div style="background-color:${dateColor[pastStr] || 'white'}">${s}</div>`;
                         } else {
-                          console.log('pastd: ' + pastDate);
-                          console.log('currentd: ' + currentDate);
-                          console.log(getStr(pastDate) + ' != ' + getStr(currentDate));
+                            console.log('pastd: ' + pastDate);
+                            console.log('currentd: ' + currentDate);
+                            console.log(getStr(pastDate) + ' != ' + getStr(currentDate));
                         }
 
                     }
-                    console.log(str);
+                    console.log('RESULT: ' + str);
                     descPast.innerHTML = str;
                 }
 
                 function deletePast(dateStr, index) {
+                    console.log('dateStr: ' + dateStr);
                     history[dateStr].splice(index, 1);
+                    if (history[dateStr].length == 0) {
+                        delete history[dateStr];
+                    }
                     updateDescPast();
                 }
 
 
-                function saveHistory() {
+                function saveData() {
                     if (typeof (Storage) !== undefined) {
                         //console.log('local storage available');
                         //console.log('key: ' + KEY);
                         //console.log('history: ' + JSON.stringify(history));
-                        localStorage.setItem(KEY, JSON.stringify(history));
+                        localStorage.setItem(KEY_COLOR, JSON.stringify(dateColor));
+                        localStorage.setItem(KEY_HISTORY, JSON.stringify(history));
                     } else {
                         //console.log('local storage unavailable');
                     }
