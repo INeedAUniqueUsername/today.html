@@ -73,7 +73,7 @@
 
                 if (typeof (Storage) !== undefined) {
                     let h = localStorage.getItem(KEY);
-                    history = JSON.parse(h);
+                    history = JSON.parse(h) || {};
 
                     //console.log('local storage available');
                     //console.log('key: ' + KEY);
