@@ -18,34 +18,40 @@
             p {
                 font-size:24px;
 
-                margin:0px 0px 0px 0px;
+                margin:0px 32px 0px 32px;
                 padding: 8px 0px 8px 0px;
+
+                word-wrap:break-word;
             }
 
             .entry:hover {
+                clear:both;
                 background-color:lightgray;
+            }
+            .entryButton {
+            }
+
+            .desc {
             }
         </style>
     </head>
-    <body onunload="saveHistory()">
-        <div style="margin:64px 64px 64px 64px;">
+    <body onunload="saveHistory()" style="margin: 64px 64px 64px 64px;">
+        <div>
 
-            <div>
-                <h1 id="title">Today...</h1>
+            <h1 id="title" style="margin-left:0px;">Today...</h1>
 
-                <div class="desc">
+            <div class="desc">
 
-                    <span style="font-size: 24px;">- </span>
-                    <div style="display:inline-block; width:960px;">
-                        <input id="input" placeholder="a lot of great things happened!" />
-                    </div>
+                <span style="font-size: 24px; margin-left:90px;">- </span>
+                <div style="display:inline-block; width:960px;">
+                    <input id="input" placeholder="a lot of great things happened!" />
                 </div>
-                
-                <div class="desc" id="descToday">
-                </div>
-                <div class="desc" id="descPast">
+            </div>
 
-                </div>
+            <div class="desc" id="descToday">
+            </div>
+            <div class="desc" id="descPast">
+
             </div>
             <script type="text/javascript">
                 var localStorage = window.localStorage;
@@ -97,7 +103,7 @@
 
                         //console.log('history: ' + history);
                         //console.log('text: ' + text);
-                        
+
                         add(date, text);
                         let d = new Date(date.getFullYear() - 1, date.getMonth(), date.getDay());
                         add(d, text);
@@ -133,9 +139,9 @@
                             .map((line, index) => `
 
 <p class="entry">
-    - ${line}
+<b onclick="deleteAt(${index})" class="entryButton">[X]</b>
 
-<b onclick="deleteAt(${index})" style="float:right; margin-right:16px;">[X]</b>
+                - ${line}
 </p>`)
                             .join('');
                     }
@@ -174,7 +180,7 @@
                     }
                     descPast.innerHTML = str;
                 }
-                
+
 
                 function saveHistory() {
                     if (typeof (Storage) !== undefined) {
