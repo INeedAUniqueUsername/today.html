@@ -54,17 +54,17 @@
 
             </div>
             <script type="text/javascript">
-                var localStorage = window.localStorage;
-                var KEY = 'INeedAUniqueUsername/today/history';
+                let localStorage = window.localStorage;
+                let KEY = 'INeedAUniqueUsername/today/history';
 
                 function wipe() {
                     localStorage.setItem(KEY, {});
                 }
 
-                var today = new Date();
+                let today = new Date();
                 let history = {};
 
-                var date = new Date();
+                let date = new Date();
 
                 console.log('date: ' + getStr(date));
 
