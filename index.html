@@ -4,6 +4,8 @@
             Today...
         </title>
         <style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap');
+
             * {
                 font-family:'IBM Plex Mono';
             }
@@ -15,7 +17,7 @@
                 font-size:24px;
                 width:100%;
             }
-            p {
+            .entry {
                 font-size:24px;
 
                 margin:0px 32px 0px 32px;
@@ -23,12 +25,19 @@
 
                 word-wrap:break-word;
             }
+            .entry .entryButton {
+              visibility:hidden;
+            }
 
             .entry:hover {
                 clear:both;
                 background-color:lightgray;
             }
+            .entry:hover .entryButton {
+                visibility: visible;
+            }
             .entryButton {
+                float:right;
             }
 
             .desc {
@@ -42,7 +51,7 @@
 
             <div class="desc">
 
-                <span style="font-size: 24px; margin-left:90px;">- </span>
+                <span style="font-size: 24px; margin-left:32px;">- </span>
                 <div style="display:inline-block; width:960px;">
                     <input id="input" placeholder="a lot of great things happened!" />
                 </div>
@@ -61,12 +70,11 @@
                     localStorage.setItem(KEY, {});
                 }
 
-                var today = new Date();
                 let history = {};
 
-                var date = new Date();
+                var currentDate = new Date();
 
-                console.log('date: ' + getStr(date));
+                console.log('date: ' + getStr(currentDate));
 
                 let input = document.getElementById('input');
                 input.onkeypress = record;
@@ -86,12 +94,8 @@
                 } else {
                     //console.log('local storage unavailable');
                 }
-                function setDate(d) {
-                    date = d;
-                    dateStr = getStr(d);
-                }
                 function getStr(date) {
-                    return `${date.getMonth()}/${date.getUTCDay()}/${date.getUTCFullYear()}`;
+                    return `${date.getMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`;
                 }
 
                 function record(e) {
@@ -104,8 +108,8 @@
                         //console.log('history: ' + history);
                         //console.log('text: ' + text);
 
-                        add(date, text);
-                        let d = new Date(date.getFullYear() - 1, date.getMonth(), date.getDay());
+                        add(currentDate, text);
+                        let d = new Date(currentDate.getUTCFullYear() - 1, currentDate.getUTCMonth(), currentDate.getUTCDate());
                         add(d, text);
 
                         saveHistory();
@@ -123,9 +127,9 @@
                     history[dateStr].push(event);
                 }
 
-                function deleteAt(index) {
+                function deleteToday(index) {
 
-                    let dateStr = getStr(date);
+                    let dateStr = getStr(currentDate);
                     history[dateStr].splice(index, 1);
                     updateDescToday();
                 }
@@ -133,16 +137,14 @@
                     let descToday = document.getElementById('descToday');
 
                     let str = '';
-                    let dateStr = getStr(date);
+                    let dateStr = getStr(currentDate);
                     if (history[dateStr]) {
                         str += history[dateStr]
                             .map((line, index) => `
-
-<p class="entry">
-<b onclick="deleteAt(${index})" class="entryButton">[X]</b>
-
-                - ${line}
-</p>`)
+                                <p class="entry">
+                                <b class="entryButton" onclick="deleteToday(${index})">[X]</b>
+                                    - ${line}
+                                </p>`)
                             .join('');
                     }
                     descToday.innerHTML = `${str}`;
@@ -154,31 +156,40 @@
                     let keys = Object.keys(history);
                     for (let i in keys) {
                         let past = keys[i];
+                        let pastDate = new Date(past);
 
-                        console.log('past: ' + past);
-                        let pastDate = new Date(Date.parse(past));
-                        console.log('pastd: ' + pastDate);
-                        //Same day
-                        if (pastDate.getUTCDay() != date.getUTCDay()) {
-                            continue;
-                        }
-                        //Same month
-                        if (pastDate.getUTCMonth() != date.getUTCMonth()) {
-                            continue;
-                        }
-                        //Different year
-                        if (pastDate.getUTCFullYear() == date.getUTCFullYear()) {
-                            continue;
+                        //Date must be...
+                        //SAME day of month,
+                        //SAME month of year,
+                        //DIFFERENT year
+                        if (pastDate.getUTCDate() === currentDate.getUTCDate()
+                            && pastDate.getUTCMonth() === currentDate.getUTCMonth()
+                            && pastDate.getUTCFullYear() !== currentDate.getUTCFullYear()) {
+
+                            let deltaYear = (currentDate.getUTCFullYear() - pastDate.getUTCFullYear());
+                            str += `<h1>${deltaYear} ${deltaYear === 1 ? 'years' : 'year'} ago...</h1>`;
+                            console.log(history[past]);
+                            let s = history[past]
+                                .map((line, index) => `
+                                    <p class="entry">
+                                    <b class="entryButton" onclick="deletePast(${past}, ${index})">X</b>
+                                    - ${line}</p>`)
+                                .join('');
+                            str += s;
+                        } else {
+                          console.log('pastd: ' + pastDate);
+                          console.log('currentd: ' + currentDate);
+                          console.log(getStr(pastDate) + ' != ' + getStr(currentDate));
                         }
 
-                        let deltaYear = (date.getUTCFullYear() - pastDate.getUTCFullYear());
-                        str += `<h1>${deltaYear} ${deltaYear == 1 ? 'years' : 'year'} ago...</h1>`;
-                        let s = history[past]
-                            .map((line, index) => `<b onclick="history[${past}].splice(${index}); updateDescPast();">X</b><li>- ${line}</li>`)
-                            .join('');
-                        str += `<ul>${s}</ul>`;
                     }
+                    console.log(str);
                     descPast.innerHTML = str;
+                }
+
+                function deletePast(dateStr, index) {
+                    history[dateStr].splice(index, 1);
+                    updateDescPast();
                 }
 
 
