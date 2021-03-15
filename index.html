@@ -11,12 +11,12 @@
             }
 
             #title, #dateInput {
-                margin-top: 8px;
                 font-size: 36px;
                 padding: 0px 0px 0px 0px;
                 width: 256px;
             }
             #title {
+                margin-top: 0px;
                 margin-bottom: 20px;
             }
                 #title:hover {
@@ -24,9 +24,8 @@
                 }
 
             #dateInput {
+                margin-top: 0px;
                 margin-bottom: 16px;
-            }
-            #dateInput {
             }
 
             #input {
@@ -51,17 +50,33 @@
                 }
 
 
+            #prevArrow, #nextArrow {
+                margin-bottom: 4px;
+                font-size: 32px;
+                width: 48px;
+            }
+
+            #prevArrow, #nextArrow, #colorbar {
+                user-select: none;
+                -webkit-user-select: none; /* Chrome all / Safari all */
+                -moz-user-select: none; /* Firefox all */
+                -ms-user-select: none; /* IE 10+ */
+            }
+            #prevArrow:hover, #nextArrow:hover {
+                background-color: lightgray;
+            }
+
             .entry:hover .entryButton {
                 visibility: visible;
             }
             .entryButton {
                 float:right;
             }
-            .colorbar {
+            #colorbar {
                 margin: 0px 0px 0px 0px;
                 padding: 0px 0px 0px 0px;
             }
-                .colorbar div {
+                #colorbar div {
                     width: 48px;
                     height: 48px;
                     clear: both;
@@ -74,16 +89,22 @@
             }
         </style>
     </head>
-    <body onunload="saveHistory()" style="margin: 64px 64px 64px 64px;">
+    <body onunload="saveHistory()" style="margin: 0px 64px 64px 64px;">
         <div>
 
 
 
-            <div class="colorbar">
+            <div style="width:106px;">
+                <h1 id="prevArrow" style="float:left; text-align:center;">&lt;-</h1>
+                <h1 id="nextArrow" style="float:right; text-align:center;">-&gt;</h1>
+            </div>
+            <div style="clear:both;"></div>
+            <div id="colorbar">
                 <div onclick="setColor(this)" style="background-color:palegoldenrod;"></div>
                 <div onclick="setColor(this)" style="background-color:lightpink;"></div>
                 <div onclick="setColor(this)" style="background-color:paleturquoise;"></div>
                 <div onclick="setColor(this)" style="background-color:plum;"></div>
+                <div onclick="setColor(this)" style="background-color:mediumaquamarine;"></div>
             </div>
             <div id="sectionToday">
                 <h1 id="title" onclick="enterDate()">Today...</h1>
@@ -111,10 +132,18 @@
                 let KEY_HISTORY = 'INeedAUniqueUsername/today/history';
                 let KEY_COLOR = 'INeedAUniqueUsername/today/color';
 
+                let DAY = 24 * 60 * 60 * 1000;
                 let dateColor = {};
 
+                let prevArrow = document.getElementById('prevArrow');
+                let nextArrow = document.getElementById('nextArrow');
+
                 function setColor(e) {
-                    dateColor[getStr(currentDate)] = e.style['background-color'];
+                    if (dateColor[getStr(currentDate)] == e.style['background-color']) {
+                        dateColor[getStr(currentDate)] = 'white';
+                    } else {
+                        dateColor[getStr(currentDate)] = e.style['background-color'];
+                    }
                     saveData();
                     updateDescToday();
                 }
@@ -134,6 +163,7 @@
                 dateInput.onkeypress = checkDateInput;
                 dateInput.oninput = () => {
                     trySetDate();
+                    updateArrows();
                     updateDescPast();
                     updateDescToday();
                 }
@@ -167,14 +197,16 @@
                     dateInput.hidden = 'hidden';
 
 
-                    updateDescPast();
+                    updateArrows();
                     updateDescToday();
+                    updateDescPast();
                 }
 
+                
 
                 let history = {};
 
-                var currentDate = new Date();
+                let currentDate = new Date();
 
                 console.log('date: ' + getStr(currentDate));
 
@@ -193,6 +225,7 @@
                     //console.log('history loaded: ' + h);
                     //console.log('history loaded: ' + JSON.stringify(history));
 
+                    updateArrows();
                     updateDescToday();
                     updateDescPast();
                     saveData();
@@ -223,6 +256,7 @@
                         */
 
                         saveData();
+                        updateArrows();
                         updateDescToday();
                         updateDescPast();
                     }
@@ -246,7 +280,36 @@
                         delete history[dateStr];
                     }
                     updateDescToday();
+
+                    saveData();
                 }
+                function setArrowDate(d) {
+                    currentDate = d;
+                    console.log('next date: ' + d);
+
+                    showTitle();
+                    updateArrows();
+                    updateDescToday();
+                    updateDescPast();
+                }
+
+                function updateArrows() {
+                    console.log('arrow date: ' + currentDate);
+                    prevArrow.onclick = () => setArrowDate(
+                        new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate() - 1)
+                    );
+                    nextArrow.onclick = () => setArrowDate(
+                        new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate() + 1)
+                    );
+
+                    prevArrow.style['background-color'] = dateColor[getStr(
+                        new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate() - 1)
+                    )] || 'white';
+                    nextArrow.style['background-color'] = dateColor[getStr(
+                        new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate() + 1)
+                    )] || 'white';
+                }
+
                 function updateDescToday() {
                     let descToday = document.getElementById('descToday');
 
@@ -257,10 +320,10 @@
                     if (history[dateStr]) {
                         str += history[dateStr]
                             .map((line, index) => `
-                                                        <p class="entry">
-                                                        <b class="entryButton" onclick="deleteToday(${index})">[X]</b>
-                                                            - ${line}
-                                                        </p>`)
+                                                                                <p class="entry">
+                                                                                <b class="entryButton" onclick="deleteToday(${index})">[X]</b>
+                                                                                    - ${line}
+                                                                                </p>`)
                             .join('');
                     }
                     descToday.innerHTML = `${str}`;
@@ -268,7 +331,7 @@
                 }
 
                 function setDate(dateStr) {
-                    console.log(dateStr);
+                    //console.log(dateStr);
                     currentDate = new Date(dateStr);
                     showTitle();
                 }
@@ -303,33 +366,35 @@
                                 deltaYear = -deltaYear;
                                 s = `<h1 class="entryTitle" onclick="setDate('${pastStr}')"> ${pastStr} (${deltaYear} ${deltaYear === 1 ? 'year' : 'years'} later)...</h1>`;
                             }
-                            console.log('pastSTR: ' + pastStr);
+                            //console.log('pastSTR: ' + pastStr);
                             s += history[past]
                                 .map((line, index) => `
-                                                            <p class="entry">
-                                                            <b class="entryButton" onclick="deletePast('${pastStr}', ${index})">[X]</b>
-                                                            - ${line}</p>`)
+                                                                                    <p class="entry">
+                                                                                    <b class="entryButton" onclick="deletePast('${pastStr}', ${index})">[X]</b>
+                                                                                    - ${line}</p>`)
                                 .join('');
 
                             str += `<div style="background-color:${dateColor[pastStr] || 'white'}">${s}</div>`;
                         } else {
-                            console.log('pastd: ' + pastDate);
-                            console.log('currentd: ' + currentDate);
-                            console.log(getStr(pastDate) + ' != ' + getStr(currentDate));
+                            //console.log('pastd: ' + pastDate);
+                            //console.log('currentd: ' + currentDate);
+                            //console.log(getStr(pastDate) + ' != ' + getStr(currentDate));
                         }
 
                     }
-                    console.log('RESULT: ' + str);
+                    //console.log('RESULT: ' + str);
                     descPast.innerHTML = str;
                 }
 
                 function deletePast(dateStr, index) {
-                    console.log('dateStr: ' + dateStr);
+                    //console.log('dateStr: ' + dateStr);
                     history[dateStr].splice(index, 1);
                     if (history[dateStr].length == 0) {
                         delete history[dateStr];
                     }
                     updateDescPast();
+
+                    saveData();
                 }
 
 
